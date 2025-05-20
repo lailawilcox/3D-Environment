@@ -1,11 +1,17 @@
 import java.awt.Robot;
 
 //colour pallette
-color black = #000000;
-color white = #FFFFFF;
+color black = #000000; //oak planks
+color white = #FFFFFF; //empty space
+color blue = #7092BE;  //bricks
 
 //Textures
 PImage stoneBrick;
+PImage oakLogSide;
+PImage oakLogTop;
+PImage grassBlockTop;
+PImage grassBlockSide;
+PImage grassBlockBottom;
 
 //Map Variables
 int gridSize;
@@ -43,7 +49,7 @@ void setup() {
 
   //Initialize Camera
   eyeX = width/2;
-  eyeY = height/2;
+  eyeY = 8*height/10;
   eyeZ = height/2;
 
   focusX = width/2;
@@ -56,6 +62,11 @@ void setup() {
 
   // Initialize Textures
   stoneBrick = loadImage("3D Textures/Stone_Bricks.png");
+  oakLogSide = loadImage("3D Textures/Oak_Log_Side.png");
+  oakLogTop = loadImage("3D Textures/Oak_Log_Top.png");
+  grassBlockTop = loadImage("3D Textures/Grass_Block_Top.png");
+  grassBlockSide = loadImage("3D Textures/Grass_Block_Side.png");
+  grassBlockBottom = loadImage("3D Textures/Grass_Block_Bottom.png");
 
   //Initialize Map
   map = loadImage("3DMap.png");
@@ -69,12 +80,13 @@ void draw() {
   background(0);
 
   //lights();
+  pointLight(255, 255, 255, eyeX, eyeY, eyeZ);
 
   camera(eyeX, eyeY, eyeZ, focusX, focusY, focusZ, tiltX, tiltY, tiltZ);
 
   move();
-  drawFloor(-2000, 2000, height, 100);
-  drawFloor(-2000, 2000, 0, 100);
+  drawFloor(-2000, 2000, height, gridSize);                //floor
+  drawCeiling(-2000, 2000, height-gridSize*5, gridSize);   //ceiling
   drawMap();
 }
 
@@ -84,26 +96,55 @@ void drawMap() {
   for (int x = 0; x < map.width; x++) {
     for (int y = 0; y < map.height; y++) {
       color c = map.get(x, y);
-      if (c != white) {
-        for (int h = 0; h < gridSize*3; h += gridSize) {
+
+      if (c == blue) {
+        for (int h = 0; h < gridSize*4; h += gridSize) {
           texturedCube(x*gridSize-2000, height-gridSize-h, y*gridSize-2000, stoneBrick, gridSize);
+        }
+      }
+
+      if (c == black) {
+        for (int h = 0; h < gridSize*4; h += gridSize) {
+          texturedCube(x*gridSize-2000, height-gridSize-h, y*gridSize-2000, oakLogTop, oakLogSide, oakLogTop, gridSize);
         }
       }
     }
   }
 }
 
-void drawFloor(int b, int f, int y, int s) {
+void drawFloor(int start, int end, int level, int gap) {
   stroke(255);
-  for (int i = b; i <= f; i += s) {
-    line(i, y, b, i, y, f);
-    line(b, y, i, f, y, i);
+  strokeWeight(1);
+  int x = start;
+  int z = start;
+  while (z < end) {
+    texturedCube(x, level, z, grassBlockTop, grassBlockSide, grassBlockBottom, gap);
+    x += gap;
+    if (x >= end) {
+      x = start;
+      z += gap;
+    }
+  }
+}
+
+void drawCeiling(int start, int end, int level, int gap) {
+  stroke(255);
+  strokeWeight(1);
+  int x = start;
+  int z = start;
+  while (z < end) {
+    texturedCube(x, level, z, stoneBrick, gap);
+    x += gap;
+    if (x >= end) {
+      x = start;
+      z += gap;
+    }
   }
 }
 
 void move() {
   //KeyBoard
-  if (wkey) {
+  if (wkey && canMoveForward()) {
     eyeX += cos(leftRightHeadAngle) * 10;
     eyeZ += sin(leftRightHeadAngle) * 10;
   }
@@ -152,6 +193,24 @@ void move() {
     skipFrame = false;
   }
   println(eyeX, eyeY, eyeZ);
+}
+
+boolean canMoveForward() {
+  float fwdx, fwdy, fwdz;
+  int mapx, mapy;
+
+  fwdx = eyeX + cos(leftRightHeadAngle) * 100;
+  fwdy = eyeY;
+  fwdz = eyeZ + sin(leftRightHeadAngle) * 100;
+
+  mapx = int(fwdx+2000) / gridSize;
+  mapy = int(fwdz+2000) / gridSize;
+
+  if (map.get(mapx, mapy) == white) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 //--------------------------------------------------------
